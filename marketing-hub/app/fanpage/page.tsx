@@ -5,6 +5,7 @@ import {
   Plus, X, Share2, Sparkles, Copy, Send, Check, ChevronDown,
   AlertCircle, Users, RefreshCw, Clock, Globe, Loader2,
 } from 'lucide-react'
+import { getSettings } from '@/lib/settings'
 
 interface FanPage {
   id: string
@@ -32,13 +33,37 @@ const TONES = [
 
 const STORAGE_KEY = 'mh_fanpages'
 
-function loadPages(): FanPage[] {
-  if (typeof window === 'undefined') return []
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') } catch { return [] }
+// Detect if running inside Electron
+const isElectron = typeof window !== 'undefined' && !!(window as Window & { electronAPI?: { encryptString?: unknown } }).electronAPI?.encryptString
+
+async function encryptToken(token: string): Promise<string> {
+  if (isElectron && (window as any).electronAPI?.encryptString) {
+    return (window as any).electronAPI.encryptString(token)
+  }
+  return token
 }
-function savePages(pages: FanPage[]) {
+
+async function decryptToken(encoded: string): Promise<string> {
+  if (isElectron && (window as any).electronAPI?.decryptString) {
+    return (window as any).electronAPI.decryptString(encoded)
+  }
+  return encoded
+}
+
+async function loadPages(): Promise<FanPage[]> {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]') as FanPage[]
+    // Decrypt all tokens
+    return Promise.all(raw.map(async p => ({ ...p, pageToken: await decryptToken(p.pageToken) })))
+  } catch { return [] }
+}
+
+async function savePages(pages: FanPage[]): Promise<void> {
   if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pages))
+  // Encrypt tokens before saving
+  const toStore = await Promise.all(pages.map(async p => ({ ...p, pageToken: await encryptToken(p.pageToken) })))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))
 }
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: () => void }) {
@@ -85,7 +110,7 @@ export default function FanpagePage() {
   const [scheduleTime, setScheduleTime] = useState('')
   const [posting, setPosting] = useState(false)
 
-  useEffect(() => { setPages(loadPages()) }, [])
+  useEffect(() => { loadPages().then(setPages) }, [])
 
   const addToast = (message: string, type: 'success' | 'error') => {
     const id = Date.now().toString()
@@ -115,7 +140,7 @@ export default function FanpagePage() {
       }
       const updated = [...pages, newPage]
       setPages(updated)
-      savePages(updated)
+      await savePages(updated)
       setPageForm({ name: '', pageId: '', pageToken: '' })
       setShowAddPage(false)
       addToast(`✓ Đã thêm page "${newPage.name}" thành công`, 'success')
@@ -129,7 +154,7 @@ export default function FanpagePage() {
       }
       const updated = [...pages, newPage]
       setPages(updated)
-      savePages(updated)
+      await savePages(updated)
       setPageForm({ name: '', pageId: '', pageToken: '' })
       setShowAddPage(false)
       addToast(`Page đã thêm (chưa xác minh: ${e instanceof Error ? e.message : 'lỗi kết nối'})`, 'error')
@@ -138,10 +163,10 @@ export default function FanpagePage() {
     }
   }
 
-  const removePage = (id: string) => {
+  const removePage = async (id: string) => {
     const updated = pages.filter(p => p.id !== id)
     setPages(updated)
-    savePages(updated)
+    await savePages(updated)
     setSelectedPages(s => { const n = new Set(s); n.delete(id); return n })
   }
 
@@ -150,9 +175,12 @@ export default function FanpagePage() {
     setGenerating(true)
     setGeneratedPosts([])
     try {
+      const { anthropicApiKey } = getSettings()
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (anthropicApiKey) headers['x-api-key'] = anthropicApiKey
       const res = await fetch('/api/fanpage/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ topic, tone, count, context }),
       })
       const data = await res.json()
