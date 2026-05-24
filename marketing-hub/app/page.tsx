@@ -23,6 +23,8 @@ import {
   Calendar,
   Megaphone,
   FileDown,
+  Download,
+  Upload,
 } from 'lucide-react'
 import { exportDashboardPDF } from '@/lib/pdf'
 
@@ -63,6 +65,45 @@ const postStatusColors: Record<string, string> = {
 export default function DashboardPage() {
   const [posts, setPosts] = useState<ContentPost[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+
+  const handleBackup = () => {
+    const data = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      posts: storage.getPosts(),
+      campaigns: storage.getCampaigns(),
+      keywords: storage.getKeywords(),
+      competitors: storage.getCompetitors(),
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `marketing-hub-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string)
+        if (!data.version) throw new Error('Invalid backup file')
+        if (!window.confirm('Khôi phục dữ liệu sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại.\n\nTiếp tục?')) return
+        if (data.posts) storage.savePosts(data.posts)
+        if (data.campaigns) storage.saveCampaigns(data.campaigns)
+        if (data.keywords) storage.saveKeywords(data.keywords)
+        if (data.competitors) storage.saveCompetitors(data.competitors)
+        window.location.reload()
+      } catch {
+        alert('File backup không hợp lệ')
+      }
+    }
+    reader.readAsText(file)
+  }
 
   useEffect(() => {
     setPosts(storage.getPosts())
@@ -135,6 +176,18 @@ export default function DashboardPage() {
           <p className="text-gray-400 text-sm mt-0.5">{today}</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleBackup}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 text-xs hover:text-gray-200 hover:border-white/20 transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Backup
+          </button>
+          <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 text-xs hover:text-gray-200 hover:border-white/20 transition-colors cursor-pointer">
+            <Upload className="w-3.5 h-3.5" />
+            Restore
+            <input type="file" accept=".json" onChange={handleRestore} className="hidden" />
+          </label>
           <button
             onClick={() => exportDashboardPDF(campaigns, posts)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 text-red-400 text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"

@@ -8,6 +8,18 @@ export async function POST(req: NextRequest) {
 
   if (!url) return NextResponse.json({ error: 'url required' }, { status: 400 })
 
+  // Validate URL is a real URL from allowed domains
+  try {
+    const parsed = new URL(url)
+    const allowed = ['youtube.com', 'youtu.be', 'tiktok.com', 'instagram.com', 'facebook.com', 'twitter.com', 'x.com', 'm.youtube.com']
+    const isAllowed = allowed.some(d => parsed.hostname === d || parsed.hostname.endsWith('.' + d))
+    if (!isAllowed) {
+      return NextResponse.json({ error: 'URL domain không được phép' }, { status: 400 })
+    }
+  } catch {
+    return NextResponse.json({ error: 'URL không hợp lệ' }, { status: 400 })
+  }
+
   const downloadDir = getDownloadDir()
   const outputTemplate = path.join(downloadDir, '%(title)s.%(ext)s')
 

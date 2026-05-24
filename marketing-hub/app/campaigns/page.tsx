@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Plus, X, TrendingUp, DollarSign, Target, Zap, ArrowUpRight, ArrowDownRight, FileDown } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Plus, X, TrendingUp, DollarSign, Target, Zap, ArrowUpRight, ArrowDownRight, FileDown, Link2, Copy, Check } from 'lucide-react'
 import { storage } from '@/lib/storage'
 import { Campaign, Platform, CampaignStatus } from '@/lib/types'
 import { exportCampaignsPDF } from '@/lib/pdf'
@@ -45,6 +45,8 @@ export default function CampaignsPage() {
   const [roiSpend, setRoiSpend] = useState('')
   const [roiRevenue, setRoiRevenue] = useState('')
   const [roiConversions, setRoiConversions] = useState('')
+  const [utm, setUtm] = useState({ url: '', source: '', medium: '', campaign: '', content: '', term: '' })
+  const [utmCopied, setUtmCopied] = useState(false)
 
   useEffect(() => { setCampaigns(storage.getCampaigns()) }, [])
 
@@ -104,6 +106,28 @@ export default function CampaignsPage() {
     }
   }
   const calc = roiCalc()
+
+  const generatedUrl = useMemo(() => {
+    if (!utm.url || !utm.source || !utm.medium || !utm.campaign) return ''
+    try {
+      const u = new URL(utm.url)
+      if (utm.source) u.searchParams.set('utm_source', utm.source)
+      if (utm.medium) u.searchParams.set('utm_medium', utm.medium)
+      if (utm.campaign) u.searchParams.set('utm_campaign', utm.campaign)
+      if (utm.content) u.searchParams.set('utm_content', utm.content)
+      if (utm.term) u.searchParams.set('utm_term', utm.term)
+      return u.toString()
+    } catch { return '' }
+  }, [utm])
+
+  const UTM_PRESETS = [
+    { label: 'Facebook Ads', source: 'facebook', medium: 'cpc' },
+    { label: 'Google Ads', source: 'google', medium: 'cpc' },
+    { label: 'TikTok', source: 'tiktok', medium: 'social' },
+    { label: 'Email', source: 'email', medium: 'newsletter' },
+    { label: 'Zalo', source: 'zalo', medium: 'social' },
+    { label: 'Organic FB', source: 'facebook', medium: 'organic' },
+  ]
 
   return (
     <div className="p-6 space-y-6">
@@ -205,7 +229,11 @@ export default function CampaignsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button onClick={() => save(campaigns.filter(x => x.id !== c.id))} className="text-red-400/40 hover:text-red-400 transition-colors">
+                      <button onClick={() => {
+                        if (window.confirm(`Xóa campaign "${c.name}"?\nHành động này không thể hoàn tác.`)) {
+                          save(campaigns.filter(x => x.id !== c.id))
+                        }
+                      }} className="text-red-400/40 hover:text-red-400 transition-colors">
                         <X className="w-4 h-4" />
                       </button>
                     </td>
@@ -262,6 +290,82 @@ export default function CampaignsPage() {
         {!calc && (
           <div className="text-center py-6 text-gray-500 text-sm">
             Nhập Ad Spend và Revenue để tính toán ROI
+          </div>
+        )}
+      </div>
+
+      {/* UTM Builder */}
+      <div className="rounded-2xl border border-white/10 bg-[#12121a] p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+            <Link2 className="w-4 h-4 text-blue-400" />
+          </div>
+          <h2 className="text-lg font-semibold text-white">UTM Link Builder</h2>
+        </div>
+
+        {/* Presets */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {UTM_PRESETS.map(preset => (
+            <button
+              key={preset.label}
+              onClick={() => setUtm(u => ({ ...u, source: preset.source, medium: preset.medium }))}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Fields */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          {[
+            { label: 'Website URL *', key: 'url', placeholder: 'https://example.com', full: true },
+            { label: 'utm_source *', key: 'source', placeholder: 'facebook' },
+            { label: 'utm_medium *', key: 'medium', placeholder: 'cpc' },
+            { label: 'utm_campaign *', key: 'campaign', placeholder: 'summer-sale' },
+            { label: 'utm_content (tuỳ chọn)', key: 'content', placeholder: 'banner-top' },
+            { label: 'utm_term (tuỳ chọn)', key: 'term', placeholder: 'digital marketing' },
+          ].map(({ label, key, placeholder }) => (
+            <div key={key}>
+              <label className="block text-sm text-gray-400 mb-1.5">{label}</label>
+              <input
+                type={key === 'url' ? 'url' : 'text'}
+                value={utm[key as keyof typeof utm]}
+                onChange={e => setUtm(u => ({ ...u, [key]: e.target.value }))}
+                placeholder={placeholder}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500/50 transition-all"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Generated URL */}
+        {generatedUrl ? (
+          <div>
+            <label className="block text-sm text-gray-400 mb-1.5">URL đã tạo</label>
+            <div className="flex gap-2">
+              <textarea
+                readOnly
+                value={generatedUrl}
+                rows={2}
+                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-blue-300 text-sm focus:outline-none resize-none"
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedUrl)
+                  setUtmCopied(true)
+                  setTimeout(() => setUtmCopied(false), 2000)
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex-shrink-0 ${utmCopied ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30'}`}
+              >
+                {utmCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {utmCopied ? 'Đã copy!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-gray-500 text-sm">
+            Nhập URL, Source, Medium và Campaign để tạo UTM link
           </div>
         )}
       </div>

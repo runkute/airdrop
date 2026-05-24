@@ -1,5 +1,3 @@
-'use client'
-
 import { ContentPost, Campaign, Keyword, Competitor } from './types'
 
 const KEYS = {

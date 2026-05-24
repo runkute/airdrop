@@ -1,8 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Calendar, Megaphone, Search, Rocket, User, TrendingUp, Share2, Film } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { LayoutDashboard, Calendar, Megaphone, Search, Rocket, User, TrendingUp, Share2, Film, Globe2 } from 'lucide-react'
+import { storage } from '@/lib/storage'
+
+interface SearchResult {
+  type: 'post' | 'campaign' | 'keyword'
+  title: string
+  href: string
+  meta: string
+}
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, accent: 'purple' },
@@ -14,10 +23,43 @@ const navItems = [
 const toolItems = [
   { href: '/fanpage', label: 'Fanpage Manager', icon: Share2, accent: 'blue' },
   { href: '/reels', label: 'Reels Discovery', icon: Film, accent: 'teal' },
+  { href: '/geo', label: 'GEO Targeting', icon: Globe2, accent: 'green' },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+
+  useEffect(() => {
+    if (searchQuery.length < 2) { setSearchResults([]); return }
+    const q = searchQuery.toLowerCase()
+    const results: SearchResult[] = []
+
+    storage.getPosts().filter(p => p.title.toLowerCase().includes(q)).slice(0, 3)
+      .forEach(p => results.push({ type: 'post', title: p.title, href: '/calendar', meta: p.status }))
+
+    storage.getCampaigns().filter(c => c.name.toLowerCase().includes(q)).slice(0, 3)
+      .forEach(c => results.push({ type: 'campaign', title: c.name, href: '/campaigns', meta: `${c.platform} • ${c.status}` }))
+
+    storage.getKeywords().filter(k => k.keyword.toLowerCase().includes(q)).slice(0, 2)
+      .forEach(k => results.push({ type: 'keyword', title: k.keyword, href: '/seo', meta: `#${k.currentRank}` }))
+
+    setSearchResults(results)
+  }, [searchQuery])
+
+  const typeIcon: Record<SearchResult['type'], React.ReactNode> = {
+    post: <Calendar className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />,
+    campaign: <Megaphone className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />,
+    keyword: <Search className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />,
+  }
+
+  const typeBadge: Record<SearchResult['type'], string> = {
+    post: 'text-purple-400 bg-purple-500/10',
+    campaign: 'text-orange-400 bg-orange-500/10',
+    keyword: 'text-blue-400 bg-blue-500/10',
+  }
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col bg-[#0d0d1a] border-r border-white/10 z-50">
@@ -30,6 +72,44 @@ export default function Sidebar() {
           <span className="text-white font-bold text-base leading-tight block">Marketing</span>
           <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent font-bold text-base leading-tight block">Hub</span>
         </div>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 py-3 border-b border-white/10 relative">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Tìm kiếm..."
+            className="w-full pl-8 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder-gray-600 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+          />
+        </div>
+        {searchResults.length > 0 && (
+          <div className="absolute left-3 right-3 top-full mt-1 z-50 rounded-xl border border-white/10 bg-[#12121a] shadow-xl overflow-hidden">
+            {searchResults.map((result, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  router.push(result.href)
+                  setSearchQuery('')
+                  setSearchResults([])
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-0"
+              >
+                {typeIcon[result.type]}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-xs font-medium truncate">{result.title}</p>
+                  <p className="text-gray-500 text-xs truncate">{result.meta}</p>
+                </div>
+                <span className={`text-xs px-1.5 py-0.5 rounded-md font-medium flex-shrink-0 ${typeBadge[result.type]}`}>
+                  {result.type}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Nav */}
@@ -63,10 +143,12 @@ export default function Sidebar() {
             const accentMap: Record<string, string> = {
               blue: 'from-blue-600/40 to-blue-500/40 border-blue-500/40 shadow-blue-500/10 text-blue-400',
               teal: 'from-teal-600/40 to-cyan-500/40 border-teal-500/40 shadow-teal-500/10 text-teal-400',
+              green: 'from-green-600/40 to-emerald-500/40 border-green-500/40 shadow-green-500/10 text-green-400',
             }
             const iconInactive: Record<string, string> = {
               blue: 'group-hover:text-blue-400',
               teal: 'group-hover:text-teal-400',
+              green: 'group-hover:text-green-400',
             }
             return (
               <Link

@@ -13,11 +13,16 @@ export async function POST(req: NextRequest) {
   }
 
   if (scheduledTime) {
-    params.scheduled_publish_time = String(Math.floor(new Date(scheduledTime).getTime() / 1000))
+    const scheduledDate = new Date(scheduledTime)
+    const minTime = new Date(Date.now() + 20 * 60 * 1000)
+    if (scheduledDate < minTime) {
+      return NextResponse.json({ error: 'Thời gian lên lịch phải cách ít nhất 20 phút' }, { status: 400 })
+    }
+    params.scheduled_publish_time = String(Math.floor(scheduledDate.getTime() / 1000))
     params.published = 'false'
   }
 
-  const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
+  const res = await fetch(`https://graph.facebook.com/v22.0/${pageId}/feed`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
