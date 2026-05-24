@@ -17,7 +17,16 @@ function load<T>(key: string, defaults: T[]): T[] {
 
 function save<T>(key: string, data: T[]): void {
   if (typeof window === 'undefined') return
-  localStorage.setItem(key, JSON.stringify(data))
+  try {
+    localStorage.setItem(key, JSON.stringify(data))
+  } catch (e) {
+    if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+      console.error('localStorage quota exceeded')
+      if (typeof window !== 'undefined') {
+        setTimeout(() => alert('⚠️ Bộ nhớ cục bộ đầy! Hãy vào Cài đặt → Dữ liệu để xóa bớt hoặc xuất backup.'), 0)
+      }
+    }
+  }
 }
 
 // Default seed data

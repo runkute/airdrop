@@ -16,7 +16,7 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') || 'local'
+  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'local'
   if (!checkRateLimit(ip)) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
   if (!topic) return NextResponse.json({ error: 'topic required' }, { status: 400 })
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = req.headers.get('x-api-key') || process.env.ANTHROPIC_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 })
 
   const client = new Anthropic({ apiKey })

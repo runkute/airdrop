@@ -62,9 +62,16 @@ export default function CampaignsPage() {
 
   const save = (updated: Campaign[]) => { setCampaigns(updated); storage.saveCampaigns(updated) }
 
-  const openNew = () => { setForm({ ...emptyForm }); setEditingId(null); setShowModal(true) }
+  const saveGeoTargets = (updated: Record<string, string>) => {
+    setGeoTargets(updated)
+    localStorage.setItem('mh_campaign_geo', JSON.stringify(updated))
+  }
+
+  const openNew = () => { setForm({ ...emptyForm }); setFormGeo(''); setFormError(''); setEditingId(null); setShowModal(true) }
   const openEdit = (c: Campaign) => {
     setEditingId(c.id)
+    setFormError('')
+    setFormGeo(geoTargets[c.id] || '')
     setForm({
       name: c.name, platform: c.platform, status: c.status,
       budget: c.budget.toString(), spent: c.spent.toString(),
@@ -75,10 +82,23 @@ export default function CampaignsPage() {
     setShowModal(true)
   }
 
+  const showError = (msg: string) => setFormError(msg)
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const num = (v: string) => parseFloat(v) || 0
+    const budget = num(form.budget)
+    const spent = num(form.spent)
+
+    if (!form.name.trim()) { showError('Tên campaign không được để trống'); return }
+    if (budget <= 0) { showError('Ngân sách phải lớn hơn 0'); return }
+    if (spent < 0) { showError('Chi tiêu không thể âm'); return }
+    if (spent > budget) { showError('Chi tiêu không thể vượt ngân sách'); return }
+    if (form.endDate && form.startDate && form.endDate < form.startDate) { showError('Ngày kết thúc phải sau ngày bắt đầu'); return }
+
+    let campaignId: string
     if (editingId) {
+      campaignId = editingId
       save(campaigns.map(c => c.id === editingId ? {
         ...c, name: form.name, platform: form.platform, status: form.status,
         budget: num(form.budget), spent: num(form.spent), impressions: num(form.impressions),
@@ -86,8 +106,9 @@ export default function CampaignsPage() {
         startDate: form.startDate, endDate: form.endDate || undefined,
       } : c))
     } else {
+      campaignId = Date.now().toString()
       const nc: Campaign = {
-        id: Date.now().toString(), name: form.name, platform: form.platform, status: form.status,
+        id: campaignId, name: form.name, platform: form.platform, status: form.status,
         budget: num(form.budget), spent: num(form.spent), impressions: num(form.impressions),
         clicks: num(form.clicks), conversions: num(form.conversions), revenue: num(form.revenue),
         startDate: form.startDate, endDate: form.endDate || undefined,
@@ -95,6 +116,17 @@ export default function CampaignsPage() {
       }
       save([...campaigns, nc])
     }
+
+    // Save geo target
+    const updatedGeo = { ...geoTargets }
+    if (formGeo) {
+      updatedGeo[campaignId] = formGeo
+    } else {
+      delete updatedGeo[campaignId]
+    }
+    saveGeoTargets(updatedGeo)
+
+    setFormError('')
     setShowModal(false)
   }
 
@@ -205,9 +237,19 @@ export default function CampaignsPage() {
                 return (
                   <tr key={c.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
                     <td className="px-4 py-3">
-                      <button onClick={() => openEdit(c)} className="text-sm font-medium text-white hover:text-orange-400 transition-colors text-left">
-                        {c.name}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openEdit(c)} className="text-sm font-medium text-white hover:text-orange-400 transition-colors text-left">
+                          {c.name}
+                        </button>
+                        {geoTargets[c.id] && (() => {
+                          const prov = PROVINCES.find(p => p.code === geoTargets[c.id])
+                          return prov ? (
+                            <span className="text-xs px-1.5 py-0.5 rounded-md font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
+                              {prov.name}
+                            </span>
+                          ) : null
+                        })()}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-1 rounded-lg font-medium border ${platformColors[c.platform]}`}>
@@ -440,6 +482,22 @@ export default function CampaignsPage() {
                     className="w-full px-3 py-2.5 rounded-xl bg-[#1a1a2e] border border-white/10 text-white text-sm focus:outline-none focus:border-orange-500/50 [color-scheme:dark]" />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">GEO Target (tùy chọn)</label>
+                <select
+                  value={formGeo}
+                  onChange={e => setFormGeo(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[#1a1a2e] border border-white/10 text-white text-sm focus:outline-none focus:border-orange-500/50"
+                >
+                  <option value="">Tất cả tỉnh thành</option>
+                  {PROVINCES.map(p => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              {formError && (
+                <p className="text-red-400 text-sm mt-1">{formError}</p>
+              )}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-gray-300 text-sm font-medium hover:bg-white/5 transition-colors">

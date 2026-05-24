@@ -89,6 +89,7 @@ export default function CalendarPage() {
   const [filterStatus, setFilterStatus] = useState<ContentStatus | 'all'>('all')
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState({ ...defaultForm })
+  const [formError, setFormError] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [view, setView] = useState<'kanban' | 'list' | 'grid'>('kanban')
   const [gridMonth, setGridMonth] = useState(new Date())
@@ -104,6 +105,14 @@ export default function CalendarPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!form.title.trim()) { setFormError('Tiêu đề không được để trống'); return }
+    if (form.platform.length === 0) { setFormError('Chọn ít nhất 1 platform'); return }
+    if (form.status === 'scheduled' && !form.scheduledDate) { setFormError('Bài scheduled cần có ngày đăng'); return }
+    if (form.status === 'scheduled' && form.scheduledDate && new Date(form.scheduledDate) < new Date()) {
+      setFormError('Ngày đăng phải trong tương lai'); return
+    }
+
     const tagList = form.tags
       .split(',')
       .map((t) => t.trim())
@@ -139,6 +148,7 @@ export default function CalendarPage() {
       }
       savePosts([...posts, newPost])
     }
+    setFormError('')
     setShowModal(false)
     setForm({ ...defaultForm })
     setEditId(null)
@@ -154,6 +164,7 @@ export default function CalendarPage() {
       tags: post.tags.join(', '),
       notes: post.notes || '',
     })
+    setFormError('')
     setEditId(post.id)
     setShowModal(true)
   }
@@ -211,7 +222,7 @@ export default function CalendarPage() {
             </button>
           </div>
           <button
-            onClick={() => { setForm({ ...defaultForm }); setEditId(null); setShowModal(true) }}
+            onClick={() => { setForm({ ...defaultForm }); setFormError(''); setEditId(null); setShowModal(true) }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/25"
           >
             <Plus className="w-4 h-4" />
