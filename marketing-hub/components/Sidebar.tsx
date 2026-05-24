@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, Calendar, Megaphone, Search, Rocket, User, TrendingUp, Share2, Film, Globe2 } from 'lucide-react'
+import { LayoutDashboard, Calendar, Megaphone, Search, Rocket, User, Share2, Film, Globe2, Settings } from 'lucide-react'
 import { storage } from '@/lib/storage'
 
 interface SearchResult {
@@ -18,6 +18,7 @@ const navItems = [
   { href: '/calendar', label: 'Calendar', icon: Calendar, accent: 'purple' },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone, accent: 'purple' },
   { href: '/seo', label: 'SEO Toolkit', icon: Search, accent: 'purple' },
+  { href: '/settings', label: 'Cài đặt', icon: Settings, accent: 'purple' },
 ]
 
 const toolItems = [
@@ -168,14 +169,6 @@ export default function Sidebar() {
           })}
         </div>
 
-        <div className="pt-4">
-          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-3 mb-3">Analytics</p>
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 cursor-default">
-            <TrendingUp className="w-5 h-5 flex-shrink-0" />
-            Reports
-            <span className="ml-auto text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full">Soon</span>
-          </div>
-        </div>
       </nav>
 
       {/* User section */}
