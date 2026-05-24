@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, X, TrendingUp, DollarSign, Target, Zap, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Plus, X, TrendingUp, DollarSign, Target, Zap, ArrowUpRight, ArrowDownRight, FileDown } from 'lucide-react'
 import { storage } from '@/lib/storage'
 import { Campaign, Platform, CampaignStatus } from '@/lib/types'
+import { exportCampaignsPDF } from '@/lib/pdf'
 
 const PLATFORMS: Platform[] = ['facebook', 'instagram', 'tiktok', 'youtube', 'twitter', 'linkedin']
 const STATUSES: CampaignStatus[] = ['active', 'paused', 'completed', 'draft']
@@ -112,13 +113,22 @@ export default function CampaignsPage() {
           <h1 className="text-2xl font-bold text-white">Campaign Manager</h1>
           <p className="text-gray-400 text-sm mt-0.5">{campaigns.filter(c => c.status === 'active').length} chiến dịch đang chạy</p>
         </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm font-medium hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/25"
-        >
-          <Plus className="w-4 h-4" />
-          Thêm Campaign
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => exportCampaignsPDF(campaigns)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/30 text-red-400 text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
+          >
+            <FileDown className="w-4 h-4" />
+            Export PDF
+          </button>
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm font-medium hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/25"
+          >
+            <Plus className="w-4 h-4" />
+            Thêm Campaign
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

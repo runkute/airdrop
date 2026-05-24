@@ -22,7 +22,9 @@ import {
   ArrowDownRight,
   Calendar,
   Megaphone,
+  FileDown,
 } from 'lucide-react'
+import { exportDashboardPDF } from '@/lib/pdf'
 
 const weeklyData = [
   { week: 'T1', reach: 45000, clicks: 1800, conversions: 90 },
@@ -132,9 +134,18 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-white">Dashboard</h1>
           <p className="text-gray-400 text-sm mt-0.5">{today}</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-sm text-gray-300">Live</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => exportDashboardPDF(campaigns, posts)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 text-red-400 text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
+          >
+            <FileDown className="w-4 h-4" />
+            Export PDF
+          </button>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-sm text-gray-300">Live</span>
+          </div>
         </div>
       </div>
 

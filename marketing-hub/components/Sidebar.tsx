@@ -2,13 +2,18 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Calendar, Megaphone, Search, Rocket, User, TrendingUp } from 'lucide-react'
+import { LayoutDashboard, Calendar, Megaphone, Search, Rocket, User, TrendingUp, Share2, Film } from 'lucide-react'
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/seo', label: 'SEO Toolkit', icon: Search },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, accent: 'purple' },
+  { href: '/calendar', label: 'Calendar', icon: Calendar, accent: 'purple' },
+  { href: '/campaigns', label: 'Campaigns', icon: Megaphone, accent: 'purple' },
+  { href: '/seo', label: 'SEO Toolkit', icon: Search, accent: 'purple' },
+]
+
+const toolItems = [
+  { href: '/fanpage', label: 'Fanpage Manager', icon: Share2, accent: 'blue' },
+  { href: '/reels', label: 'Reels Discovery', icon: Film, accent: 'teal' },
 ]
 
 export default function Sidebar() {
@@ -50,6 +55,36 @@ export default function Sidebar() {
             </Link>
           )
         })}
+
+        <div className="pt-4">
+          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-3 mb-3">Tools</p>
+          {toolItems.map(({ href, label, icon: Icon, accent }) => {
+            const isActive = pathname === href
+            const accentMap: Record<string, string> = {
+              blue: 'from-blue-600/40 to-blue-500/40 border-blue-500/40 shadow-blue-500/10 text-blue-400',
+              teal: 'from-teal-600/40 to-cyan-500/40 border-teal-500/40 shadow-teal-500/10 text-teal-400',
+            }
+            const iconInactive: Record<string, string> = {
+              blue: 'group-hover:text-blue-400',
+              teal: 'group-hover:text-teal-400',
+            }
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
+                  isActive
+                    ? `bg-gradient-to-r ${accentMap[accent]} text-white border shadow-lg`
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? accentMap[accent].split(' ')[4] : `text-gray-500 ${iconInactive[accent]}`}`} />
+                {label}
+                {isActive && <div className={`ml-auto w-1.5 h-1.5 rounded-full ${accentMap[accent].split(' ')[4].replace('text-', 'bg-')}`} />}
+              </Link>
+            )
+          })}
+        </div>
 
         <div className="pt-4">
           <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider px-3 mb-3">Analytics</p>
