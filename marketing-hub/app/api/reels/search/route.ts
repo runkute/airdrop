@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
+import { getYtDlpPath } from '@/lib/ytdlp'
 
 export interface VideoResult {
   id: string
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
       searchQuery,
     ]
 
-    const proc = spawn('/usr/local/bin/yt-dlp', args)
+    const proc = spawn(getYtDlpPath(), args)
     let output = ''
     let errorOutput = ''
 

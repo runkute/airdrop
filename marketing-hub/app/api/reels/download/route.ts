@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
-import { existsSync, mkdirSync } from 'fs'
 import path from 'path'
-import os from 'os'
+import { getYtDlpPath, getDownloadDir } from '@/lib/ytdlp'
 
 export async function POST(req: NextRequest) {
   const { url, quality = '720', format = 'mp4' } = await req.json()
 
   if (!url) return NextResponse.json({ error: 'url required' }, { status: 400 })
 
-  const downloadDir = path.join(os.homedir(), 'marketing-hub-downloads')
-  if (!existsSync(downloadDir)) mkdirSync(downloadDir, { recursive: true })
-
+  const downloadDir = getDownloadDir()
   const outputTemplate = path.join(downloadDir, '%(title)s.%(ext)s')
 
   return new Promise<NextResponse>((resolve) => {
@@ -36,7 +33,7 @@ export async function POST(req: NextRequest) {
     let lastFilename = ''
     let stderr = ''
 
-    const proc = spawn('/usr/local/bin/yt-dlp', args)
+    const proc = spawn(getYtDlpPath(), args)
 
     proc.stdout.on('data', (data: Buffer) => {
       const text = data.toString()
