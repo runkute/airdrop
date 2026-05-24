@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export const metadata: Metadata = {
   title: 'Marketing Hub',
@@ -18,7 +19,9 @@ export default function RootLayout({
         <div className="flex min-h-screen">
           <Sidebar />
           <main className="ml-60 flex-1 min-h-screen">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </main>
         </div>
       </body>

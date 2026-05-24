@@ -5,6 +5,7 @@ import { Plus, X, TrendingUp, DollarSign, Target, Zap, ArrowUpRight, ArrowDownRi
 import { storage } from '@/lib/storage'
 import { Campaign, Platform, CampaignStatus } from '@/lib/types'
 import { exportCampaignsPDF } from '@/lib/pdf'
+import { PROVINCES } from '@/lib/vietnam-geo'
 
 const PLATFORMS: Platform[] = ['facebook', 'instagram', 'tiktok', 'youtube', 'twitter', 'linkedin']
 const STATUSES: CampaignStatus[] = ['active', 'paused', 'completed', 'draft']
@@ -42,13 +43,22 @@ export default function CampaignsPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ ...emptyForm })
+  const [formError, setFormError] = useState('')
+  const [geoTargets, setGeoTargets] = useState<Record<string, string>>({})
+  const [formGeo, setFormGeo] = useState('')
   const [roiSpend, setRoiSpend] = useState('')
   const [roiRevenue, setRoiRevenue] = useState('')
   const [roiConversions, setRoiConversions] = useState('')
   const [utm, setUtm] = useState({ url: '', source: '', medium: '', campaign: '', content: '', term: '' })
   const [utmCopied, setUtmCopied] = useState(false)
 
-  useEffect(() => { setCampaigns(storage.getCampaigns()) }, [])
+  useEffect(() => {
+    setCampaigns(storage.getCampaigns())
+    try {
+      const stored = localStorage.getItem('mh_campaign_geo')
+      if (stored) setGeoTargets(JSON.parse(stored) as Record<string, string>)
+    } catch { /* ignore */ }
+  }, [])
 
   const save = (updated: Campaign[]) => { setCampaigns(updated); storage.saveCampaigns(updated) }
 

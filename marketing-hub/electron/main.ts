@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, safeStorage } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -203,6 +203,24 @@ ipcMain.handle('open-downloads', () => {
   const dir = path.join(app.getPath('home'), 'marketing-hub-downloads')
   fs.mkdirSync(dir, { recursive: true })
   shell.openPath(dir)
+})
+
+ipcMain.handle('encrypt-string', (_event, value: string): string => {
+  try {
+    if (safeStorage.isEncryptionAvailable()) {
+      return safeStorage.encryptString(value).toString('base64')
+    }
+    return value
+  } catch { return value }
+})
+
+ipcMain.handle('decrypt-string', (_event, encoded: string): string => {
+  try {
+    if (safeStorage.isEncryptionAvailable()) {
+      return safeStorage.decryptString(Buffer.from(encoded, 'base64'))
+    }
+    return encoded
+  } catch { return encoded }
 })
 
 // ─── App lifecycle ─────────────────────────────────────────────────────────────
