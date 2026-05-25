@@ -20,16 +20,13 @@ class BrandVoiceService:
         self, workspace_id: UUID, data: BrandVoiceCreate
     ) -> BrandVoice:
         """Create a new brand voice for a workspace."""
+        from sqlalchemy import update as sql_update
+
         voice_data = data.model_dump(exclude_unset=False)
         if voice_data.get("is_default"):
             # Clear existing default before creating new default
-            await self.repo.set_default.__wrapped__(
-                self.repo, None, workspace_id
-            ) if False else None
-            # Use repository method to clear defaults
-            from sqlalchemy import update
             await self.repo.db.execute(
-                update(BrandVoice)
+                sql_update(BrandVoice)
                 .where(
                     BrandVoice.workspace_id == workspace_id,
                     BrandVoice.is_default == True,
