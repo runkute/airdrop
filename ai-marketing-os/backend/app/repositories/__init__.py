@@ -1,4 +1,4 @@
-from app.repositories.base_repository import BaseRepository
+from app.repositories.base_repository import BaseRepository  # noqa: F401
 from app.repositories.user_repository import UserRepository
 from app.repositories.workspace_repository import WorkspaceRepository
 from app.repositories.brand_voice_repository import BrandVoiceRepository
