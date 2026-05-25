@@ -1,4 +1,5 @@
-.PHONY: help build up down restart logs shell-backend shell-frontend migrate seed test lint format clean
+.PHONY: help build up down restart logs shell-backend shell-frontend migrate seed test lint format clean \
+        desktop-install desktop-dev desktop-build-backend desktop-build-frontend desktop-build desktop-build-win
 
 # Default target
 help:
@@ -136,6 +137,56 @@ setup:
 clean:
 	docker compose down -v --remove-orphans
 	docker system prune -f
+
+# ============================================================
+# DESKTOP BUILD (Electron .exe)
+# ============================================================
+
+desktop-install:
+	@echo "Installing Electron dependencies..."
+	cd electron && npm install
+	@echo "Installing desktop backend dependencies..."
+	cd backend && pip install -r requirements-desktop.txt
+	@echo "Done. Run 'make desktop-dev' to test, 'make desktop-build' to package."
+
+desktop-dev:
+	@echo "Starting backend in desktop mode (SQLite, port 8765)..."
+	cd backend && BACKEND_PORT=8765 DATABASE_URL="sqlite+aiosqlite:///./aimarketingos-dev.db" \
+		uvicorn app.main_desktop:app --host 127.0.0.1 --port 8765 --reload &
+	@echo "Starting frontend dev server..."
+	cd frontend && NEXT_PUBLIC_API_URL=http://127.0.0.1:8765/api/v1 npm run dev &
+	@echo "Starting Electron..."
+	sleep 5
+	cd electron && NODE_ENV=development npx electron .
+
+desktop-build-backend:
+	@echo "Building Python backend with PyInstaller..."
+	cd backend && pyinstaller build.spec --clean --noconfirm \
+		--distpath ../pyinstaller-dist
+	rm -rf backend-dist && cp -r pyinstaller-dist/backend-server backend-dist
+	@echo "Backend built → backend-dist/"
+
+desktop-build-frontend:
+	@echo "Building Next.js frontend (static export)..."
+	cd frontend && NEXT_PUBLIC_API_URL=http://127.0.0.1:8765/api/v1 \
+		npx next build
+	rm -rf frontend-dist && cp -r frontend/out frontend-dist
+	@echo "Frontend built → frontend-dist/"
+
+desktop-build: desktop-build-backend desktop-build-frontend
+	@echo "Building Electron app..."
+	cd electron && npx electron-builder --config.directories.output=../dist
+	@echo ""
+	@echo "Build complete! Output in dist/"
+	ls dist/*.{exe,dmg,AppImage} 2>/dev/null || ls dist/
+
+desktop-build-win: desktop-build-backend desktop-build-frontend
+	@echo "Building Windows .exe installer..."
+	cd electron && npx electron-builder --win --x64 \
+		--config.directories.output=../dist
+	@echo ""
+	@echo "Windows build complete!"
+	@echo "Installer: dist/AI Marketing OS Setup*.exe"
 
 # Generate encryption key
 gen-key:

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Marketing OS — Starting...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 50%, #0f1a1a 100%);
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      -webkit-app-region: drag;
+    }
+
+    .logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: 0 0 40px rgba(124, 58, 237, 0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .logo svg {
+      width: 40px;
+      height: 40px;
+      fill: white;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #ffffff, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 40px;
+      letter-spacing: 0.5px;
+    }
+
+    .spinner-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(124, 58, 237, 0.15);
+      border-top-color: #7c3aed;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .status {
+      font-size: 12px;
+      color: rgba(255,255,255,0.4);
+      animation: fadeIn 0.5s ease;
+    }
+
+    .dots {
+      display: inline-block;
+      animation: dots 1.4s steps(3, end) infinite;
+      width: 18px;
+      text-align: left;
+    }
+
+    .version {
+      position: absolute;
+      bottom: 20px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(124, 58, 237, 0.3); }
+      50% { box-shadow: 0 0 60px rgba(124, 58, 237, 0.6); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes dots {
+      0%, 20% { content: "."; }
+      40% { content: ".."; }
+      60%, 100% { content: "..."; }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+  </div>
+
+  <h1>AI Marketing OS</h1>
+  <p class="subtitle">DESKTOP EDITION</p>
+
+  <div class="spinner-container">
+    <div class="spinner"></div>
+    <p class="status" id="status">Starting services<span class="dots">...</span></p>
+  </div>
+
+  <p class="version" id="version">v1.0.0</p>
+
+  <script>
+    const statuses = [
+      "Starting services",
+      "Initializing database",
+      "Loading AI gateway",
+      "Setting up workspace",
+      "Almost ready",
+    ]
+    let idx = 0
+    const statusEl = document.getElementById("status")
+
+    setInterval(() => {
+      idx = (idx + 1) % statuses.length
+      statusEl.innerHTML = statuses[idx] + '<span class="dots">...</span>'
+    }, 2200)
+
+    // Get version from electron if available
+    try {
+      if (window.electronAPI) {
+        window.electronAPI.getVersion().then(v => {
+          document.getElementById("version").textContent = "v" + v
+        })
+      }
+    } catch {}
+  </script>
+</body>
+</html>
