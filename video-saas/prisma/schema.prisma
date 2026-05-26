@@ -44,16 +44,17 @@ model Project {
 }
 
 model Scene {
-  id        String   @id @default(cuid())
-  order     Int
-  text      String?
-  imageUrl  String?
-  audioUrl  String?
-  duration  Float    @default(5.0)
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  order       Int
+  text        String?
+  imagePrompt String?
+  imageUrl    String?
+  audioUrl    String?
+  duration    Float    @default(5.0)
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([projectId])
   @@map("scenes")
