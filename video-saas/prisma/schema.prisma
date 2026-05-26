@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  draft
+  generating
+  rendering
+  completed
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String?
+  avatarUrl    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  projects     Project[]
+  credits      UserCredits?
+
+  @@map("users")
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  status       ProjectStatus @default(draft)
+  videoUrl     String?
+  thumbnailUrl String?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scenes       Scene[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Scene {
+  id        String   @id @default(cuid())
+  order     Int
+  text      String?
+  imageUrl  String?
+  audioUrl  String?
+  duration  Float    @default(5.0)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@map("scenes")
+}
+
+model UserCredits {
+  id        String   @id @default(cuid())
+  balance   Int      @default(0)
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_credits")
+}
