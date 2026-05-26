@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { CreditBalance } from "@/components/credit-balance";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,6 +40,7 @@ export interface SceneData {
 
 export interface ProjectData {
   id: string;
+  userId: string;
   title: string;
   status: string;
   videoUrl: string | null;
@@ -301,10 +303,12 @@ function RenderFooter({
   projectId,
   initialStatus,
   initialVideoUrl,
+  onSuccess,
 }: {
   projectId: string;
   initialStatus: string;
   initialVideoUrl: string | null;
+  onSuccess?: () => void;
 }) {
   const getInitialState = (): RenderState => {
     if (initialStatus === "rendering") return "polling";
@@ -335,6 +339,7 @@ function RenderFooter({
           setVideoUrl(project.videoUrl);
           setState("success");
           stopPolling();
+          onSuccess?.();
         } else if (project.status === "draft") {
           // Worker reverted to draft = failure
           setState("error");
@@ -461,11 +466,23 @@ function RenderFooter({
 // SceneEditor — main export
 // ---------------------------------------------------------------------------
 
-export function SceneEditor({ project }: { project: ProjectData }) {
+export function SceneEditor({
+  project,
+  initialCredits = 0,
+}: {
+  project: ProjectData;
+  initialCredits?: number;
+}) {
   const [scenes, setScenes] = useState<SceneData[]>(project.scenes);
+  const [creditsRefreshKey, setCreditsRefreshKey] = useState(0);
 
   function handleSceneUpdate(id: string, patch: Partial<SceneData>) {
     setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }
+
+  function handleRenderSuccess() {
+    // Render deducts 10 credits — refresh the displayed balance
+    setCreditsRefreshKey((k) => k + 1);
   }
 
   const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0);
@@ -490,13 +507,23 @@ export function SceneEditor({ project }: { project: ProjectData }) {
               {project.status}
             </Badge>
           </div>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground shrink-0">
-            <span>{scenes.length} scene{scenes.length !== 1 ? "s" : ""}</span>
-            <Separator orientation="vertical" className="h-4" />
-            <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {totalDuration.toFixed(1)}s total
-            </span>
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="hidden md:inline">
+                {scenes.length} scene{scenes.length !== 1 ? "s" : ""}
+              </span>
+              <Separator orientation="vertical" className="h-4 hidden md:block" />
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {totalDuration.toFixed(1)}s
+              </span>
+            </div>
+            <Separator orientation="vertical" className="h-5" />
+            <CreditBalance
+              userId={project.userId}
+              initialBalance={initialCredits}
+              refreshKey={creditsRefreshKey}
+            />
           </div>
         </div>
       </header>
@@ -525,6 +552,7 @@ export function SceneEditor({ project }: { project: ProjectData }) {
         projectId={project.id}
         initialStatus={project.status}
         initialVideoUrl={project.videoUrl}
+        onSuccess={handleRenderSuccess}
       />
     </div>
   );

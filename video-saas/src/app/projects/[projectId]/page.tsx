@@ -14,10 +14,14 @@ export default async function ProjectPage({
 
   if (!project) notFound();
 
-  // Serialize to a plain object — strips Date fields so the client
-  // component receives a JSON-safe value.
+  const creditRecord = await prisma.userCredits.findUnique({
+    where: { userId: project.userId },
+    select: { balance: true },
+  });
+
   const data: ProjectData = {
     id: project.id,
+    userId: project.userId,
     title: project.title,
     status: project.status,
     videoUrl: project.videoUrl,
@@ -32,5 +36,10 @@ export default async function ProjectPage({
     })),
   };
 
-  return <SceneEditor project={data} />;
+  return (
+    <SceneEditor
+      project={data}
+      initialCredits={creditRecord?.balance ?? 0}
+    />
+  );
 }
