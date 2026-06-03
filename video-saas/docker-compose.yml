@@ -1,0 +1,77 @@
+version: "3.9"
+
+# Dùng file này để chạy trên VPS:
+#   docker compose up -d --build
+#
+# Biến môi trường lấy từ .env (cùng thư mục với file này).
+# DATABASE_URL và REDIS_URL được ghi đè bằng hostname nội bộ Docker
+# nên không cần sửa .env cho 2 biến đó.
+
+x-common-env: &common-env
+  DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/video_saas_dev?schema=public
+  REDIS_URL: redis://redis:6379
+
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: video_saas_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Next.js web server ─────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      target: app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      <<: *common-env
+    env_file: .env          # nạp API keys (ANTHROPIC, OPENAI, STRIPE, ...)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── BullMQ + FFmpeg worker ────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    environment:
+      <<: *common-env
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
